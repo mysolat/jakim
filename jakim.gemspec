@@ -14,7 +14,7 @@ Gem::Specification.new do |spec|
   spec.license = "MIT"
   spec.required_ruby_version = ">= 3.2"
 
-  spec.files = Dir["lib/**/*.rb", "README.md", "LICENSE.txt"]
+  spec.files = Dir["lib/**/*.rb", "data/jakim.geojson", "README.md", "LICENSE.txt"]
   spec.require_paths = ["lib"]
 
   spec.add_dependency "flexirest", "~> 1.12"

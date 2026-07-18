@@ -9,3 +9,6 @@ require "active_support/core_ext/object/blank"
 
 require_relative "jakim/version"
 require_relative "jakim/api_resource"
+require_relative "jakim/location"
+require_relative "jakim/calendar"
+require_relative "jakim/zone"
