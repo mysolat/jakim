@@ -6,7 +6,7 @@ Gem::Specification.new do |spec|
   spec.name = "jakim"
   spec.version = Jakim::VERSION
   spec.authors = ["Mohd Khairi"]
-  spec.email = ["khairi.ad6@gmail.com"]
+  spec.email = ["khairi@labs.my"]
 
   spec.summary = "Ruby client for the JAKIM e-Solat prayer times API"
   spec.description = "Flexirest-based client for Malaysia's JAKIM e-Solat service " \
