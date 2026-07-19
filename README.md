@@ -10,13 +10,12 @@ gem "jakim"
 
 ## Usage
 
-### Prayer times (`Jakim::ApiResource`)
+### Prayer times (`Jakim::PrayerTime`)
 
 ```ruby
-Jakim::ApiResource.daily(zone: "WLY01")                         # today's prayer times
-Jakim::ApiResource.monthly(zone: "SGR01", month: 2, year: 2025) # every day of a month
-Jakim::ApiResource.yearly(zone: "JHR01", year: 2025)            # every day of a year
-Jakim::ApiResource.islamic_events                               # peristiwa penting
+Jakim::PrayerTime.daily(zone: "WLY01")                         # today's prayer times
+Jakim::PrayerTime.monthly(zone: "SGR01", month: 2, year: 2025) # every day of a month
+Jakim::PrayerTime.yearly(zone: "JHR01", year: 2025)            # every day of a year
 ```
 
 Results are Flexirest objects mirroring the e-Solat JSON (`result.prayerTime`, `result.status`, ...). Zone codes are upcased automatically. Each response carries an `Expires` header (`result._headers["Expires"]`) computed from the requested period — end of day for `daily`, end of the requested month/year for `monthly`/`yearly` — useful for HTTP caching.
@@ -67,6 +66,9 @@ Jakim::Calendar.hijri_month(zone: "WLY01", hijri_year: 1447, hijri_month: 7)
 
 Jakim::Calendar.today_hijri(zone: "WLY01")  # => [1448, 1]
 Jakim::Calendar.parse_hijri("1447-08-16")   # => [1447, 8]
+
+Jakim::Calendar.islamic_events              # peristiwa penting
+# => { "event" => [...] }
 ```
 
 ## Errors

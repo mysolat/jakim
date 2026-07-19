@@ -2,7 +2,7 @@
 
 require "spec_helper"
 
-RSpec.describe Jakim::ApiResource do
+RSpec.describe Jakim::PrayerTime do
   let(:body) { { "status" => "OK!", "prayerTime" => [] }.to_json }
   let(:headers) { { "Content-Type" => "application/json" } }
 

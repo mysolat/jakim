@@ -1,12 +1,14 @@
 # frozen_string_literal: true
 
 module Jakim
-  class ApiResource < Flexirest::Base
+  class PrayerTime < Flexirest::Base
     base_url "https://www.e-solat.gov.my/index.php"
 
     get :daily, "", defaults: { r: "esolatApi/TakwimSolat", period: "today", zone: "SGR01" }
     get :monthly, "", defaults: { r: "esolatApi/TakwimSolat", period: "month", zone: "SGR01", month: Time.current.month }
     get :yearly, "", defaults: { r: "esolatApi/TakwimSolat", period: "year", zone: "SGR01", year: Time.current.year }
+    # Mapped here so it shares the resource hooks, but exposed publicly via
+    # Jakim::Calendar.islamic_events.
     get :islamic_events, "", defaults: { r: "esolatApi/islamicevent", type: "all" }
 
     before_request :set_user_agent

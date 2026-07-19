@@ -8,7 +8,7 @@ require "active_support/core_ext/integer/time"
 require "active_support/core_ext/object/blank"
 
 require_relative "jakim/version"
-require_relative "jakim/api_resource"
+require_relative "jakim/prayer_time"
 require_relative "jakim/location"
 require_relative "jakim/calendar"
 require_relative "jakim/zone"

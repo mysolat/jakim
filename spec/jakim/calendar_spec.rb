@@ -49,6 +49,21 @@ RSpec.describe Jakim::Calendar do
     end
   end
 
+  describe ".islamic_events" do
+    it "returns the parsed events hash" do
+      stub_request(:get, %r{\Ahttps://www\.e-solat\.gov\.my/index\.php})
+        .with(query: hash_including("r" => "esolatApi/islamicevent", "type" => "all"))
+        .to_return(
+          status: 200,
+          body: { "event" => [{ "tarikh_miladi" => "27-Jun-2026" }] }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+
+      events = described_class.islamic_events
+      expect(events["event"].first["tarikh_miladi"]).to eq("27-Jun-2026")
+    end
+  end
+
   describe ".today_hijri" do
     it "returns today's hijri [year, month] from the daily feed" do
       stub_request(:get, %r{\Ahttps://www\.e-solat\.gov\.my/index\.php})

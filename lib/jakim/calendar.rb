@@ -18,9 +18,15 @@ module Jakim
         .sort_by { |d| d["hijri"].to_s.split("-").map(&:to_i) }
     end
 
+    # Islamic events (peristiwa penting) for the year, as a parsed hash:
+    # { "event" => [...] }. Raises on network/API failure.
+    def self.islamic_events
+      PrayerTime.islamic_events.as_json
+    end
+
     # Today's hijri [year, month] for the zone.
     def self.today_hijri(zone:)
-      payload = ApiResource.daily(zone: zone).as_json
+      payload = PrayerTime.daily(zone: zone).as_json
       day = Array(payload["prayerTime"]).first || {}
       parse_hijri(day["hijri"])
     end
@@ -32,7 +38,7 @@ module Jakim
     end
 
     def self.yearly_days(zone, year)
-      Array(ApiResource.yearly(zone: zone, year: year).as_json["prayerTime"])
+      Array(PrayerTime.yearly(zone: zone, year: year).as_json["prayerTime"])
     end
     private_class_method :yearly_days
   end
