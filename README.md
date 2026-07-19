@@ -50,7 +50,7 @@ Jakim::Zone.detect(3.139003, 101.686855)
 Jakim::Zone.detect(0.0, 90.0)   # outside Malaysia
 # => nil
 
-Jakim::Zone.geojson_path        # path to the bundled jakim.geojson (1.4 MB)
+Jakim::Zone.geojson_path        # path to the bundled jakim.geojson (~0.8 MB)
 ```
 
 String coordinates (e.g. request params) are accepted. Recommended pattern: `detect` first, fall back to `Jakim::Location.nearest_zone` for points outside every polygon (coastal waters, islands).

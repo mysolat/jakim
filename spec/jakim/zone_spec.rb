@@ -6,7 +6,7 @@ RSpec.describe Jakim::Zone do
   describe ".geojson_path" do
     it "points at the bundled geojson" do
       expect(File).to exist(described_class.geojson_path)
-      expect(File.size(described_class.geojson_path)).to be > 1_000_000
+      expect(File.size(described_class.geojson_path)).to be > 500_000
     end
   end
 
