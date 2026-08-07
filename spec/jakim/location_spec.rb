@@ -72,4 +72,61 @@ RSpec.describe Jakim::Location do
       expect(described_class.nearest_zone("abc", nil)).to be_nil
     end
   end
+
+  describe ".nearest_in_zone" do
+    # Shah Alam Seksyen 7. Shah Alam has no boundary polygon of its own — it
+    # sits inside the Petaling district — so this is the coordinate Zone.detect
+    # labels "Petaling" despite Shah Alam being a named SGR01 sub-location.
+    let(:shah_alam) { [3.0700, 101.4900] }
+
+    it "returns the closest sub-location of the zone" do
+      location = described_class.nearest_in_zone("SGR01", *shah_alam)
+
+      expect(location["location"]).to eq("Shah Alam")
+      expect(location["state"]).to eq("Selangor")
+    end
+
+    it "still returns the neighbouring town when that one is closer" do
+      # Petaling Jaya: ~4km from the Petaling centroid, ~12km from Shah Alam.
+      expect(described_class.nearest_in_zone("SGR01", 3.1073, 101.6067)["location"])
+        .to eq("Petaling")
+    end
+
+    it "never leaves the zone it was given" do
+      # Klang is nearer to these coordinates than any SGR01 row, but it is SGR03.
+      expect(described_class.nearest_in_zone("SGR01", 3.0449, 101.4455)["code"]).to eq("SGR01")
+    end
+
+    it "accepts string coordinates" do
+      expect(described_class.nearest_in_zone("SGR01", "3.0700", "101.4900")["location"])
+        .to eq("Shah Alam")
+    end
+
+    it "returns nil for an unknown code" do
+      expect(described_class.nearest_in_zone("XXX99", *shah_alam)).to be_nil
+    end
+
+    it "returns nil for invalid coordinates" do
+      expect(described_class.nearest_in_zone("SGR01", "abc", nil)).to be_nil
+    end
+  end
+
+  describe ".find_in_zone" do
+    it "finds a sub-location by name, ignoring case and surrounding space" do
+      expect(described_class.find_in_zone("SGR01", " shah alam ")["location"]).to eq("Shah Alam")
+    end
+
+    it "returns nil when the name belongs to another zone" do
+      expect(described_class.find_in_zone("JHR01", "Shah Alam")).to be_nil
+    end
+
+    it "returns nil for a name that is a state rather than a sub-location" do
+      expect(described_class.find_in_zone("JHR01", "Johor")).to be_nil
+    end
+
+    it "returns nil for a blank name" do
+      expect(described_class.find_in_zone("SGR01", nil)).to be_nil
+      expect(described_class.find_in_zone("SGR01", "  ")).to be_nil
+    end
+  end
 end

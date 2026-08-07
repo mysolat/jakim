@@ -69,6 +69,40 @@ module Jakim
       nil
     end
 
+    # The sub-location of `code` closest to the point.
+    #
+    #   Jakim::Location.nearest_in_zone("SGR01", 3.07, 101.49)
+    #   # => { "state" => "Selangor", "code" => "SGR01", "location" => "Shah Alam", ... }
+    #
+    # A zone code covers several towns at once — SGR01 alone spans Gombak,
+    # Hulu Selangor, Rawang, Hulu Langat, Sepang, Petaling and Shah Alam — so
+    # resolving a zone only half-answers "where am I". Use this to name the
+    # answer: Zone.detect reports the *administrative district* containing a
+    # point, and Shah Alam has no district of its own (it sits inside
+    # Petaling), so a coordinate there is labelled "Petaling" without it.
+    #
+    # Returns nil for an unknown code or non-numeric coordinates.
+    def self.nearest_in_zone(code, latitude, longitude)
+      lat = Float(latitude)
+      lon = Float(longitude)
+
+      all.select { |l| l["code"] == code }
+         .min_by { |l| haversine(lat, lon, l["latitude"].to_f, l["longitude"].to_f) }
+    rescue ArgumentError, TypeError
+      nil
+    end
+
+    # The row for an exact zone + location-name pair, so a remembered name can
+    # be turned back into the coordinates it was chosen for. Case- and
+    # surrounding-space-insensitive; nil when the name belongs to another zone
+    # or names no sub-location at all (a state label, say).
+    def self.find_in_zone(code, name)
+      name = name.to_s.strip
+      return nil if name.empty?
+
+      all.find { |l| l["code"] == code && l["location"].casecmp?(name) }
+    end
+
     # Haversine great-circle distance in kilometres between two GPS points.
     def self.haversine(lat1, lon1, lat2, lon2)
       r = 6371.0
