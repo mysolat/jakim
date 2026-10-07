@@ -1,0 +1,38 @@
+#!/bin/bash
+# Build this gem and push it to the private Geminabox at rubygems.labs.my.
+# Usage: bin/release
+# Needs the geminabox gem and an admin login in ~/.gem/geminabox
+# (run `gem inabox --configure` once). The read-only login cannot push.
+
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+NAME=$(basename "$(ls ./*.gemspec)" .gemspec)
+VERSION=$(ruby -e 'print Gem::Specification.load(ARGV[0]).version' "$NAME.gemspec")
+FILE="pkg/$NAME-$VERSION.gem"
+
+if [ -n "$(git status --porcelain)" ]; then
+  echo "❌ Uncommitted changes. Commit them, then run bin/release again." >&2
+  exit 1
+fi
+
+if git rev-parse -q --verify "refs/tags/v$VERSION" >/dev/null; then
+  echo "❌ Tag v$VERSION exists. Bump the version in lib/$NAME/version.rb first." >&2
+  exit 1
+fi
+
+echo "🧪 Running specs"
+bundle exec rspec
+
+echo "📦 Building $FILE"
+mkdir -p pkg
+gem build "$NAME.gemspec" --output "$FILE"
+
+# gem inabox reads the host and login from ~/.gem/geminabox.
+# Geminabox answers 409 when this version is already on the server.
+echo "📤 Pushing to rubygems.labs.my"
+gem inabox "$FILE"
+
+git tag "v$VERSION"
+echo "✅ Released $NAME $VERSION. Push the tag: git push origin v$VERSION"
+echo "   Then in solat.my: bundle update $NAME"

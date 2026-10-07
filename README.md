@@ -4,9 +4,21 @@ Ruby client for Malaysia's JAKIM [e-Solat](https://www.e-solat.gov.my) prayer ti
 
 ## Installation
 
+The gem lives on the private Geminabox at `https://rubygems.labs.my`, not on rubygems.org. Every read needs a login.
+
 ```ruby
-gem "jakim"
+source "https://rubygems.labs.my" do
+  gem "jakim", "~> 0.4"
+end
 ```
+
+Give Bundler the login once per machine:
+
+```
+bundle config set --global rubygems.labs.my user:password
+```
+
+In CI and Docker, set `BUNDLE_RUBYGEMS__LABS__MY=user:password` instead. Use a read-only login, never the admin account.
 
 ## Usage
 
@@ -90,6 +102,15 @@ The gem raises on network/API failures — rescue at your application boundary. 
 bundle install
 bundle exec rspec
 ```
+
+## Release
+
+1. Bump `VERSION` in `lib/jakim/version.rb` and commit.
+2. Run `bin/release`. It runs the specs, builds `pkg/jakim-<version>.gem`, pushes it with `gem inabox`, and tags `v<version>`.
+3. Push the tag: `git push origin v<version>`.
+4. In solat.my, run `bundle update jakim`. The Gemfile pin `~> 0.4` accepts any 0.x from 0.4 up. Version 1.0 needs the pin changed.
+
+`gem inabox` reads the host and the admin login from `~/.gem/geminabox`. Run `gem install geminabox` and `gem inabox --configure` once per machine. The read-only login cannot push. Geminabox answers 409 when the version is already on the server.
 
 ## License
 
