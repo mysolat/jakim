@@ -4,8 +4,10 @@ module Jakim
   # JAKIM prayer-time zones and their sub-locations (state, zone code,
   # location name, centroid coordinates). Ported from solat.my.
   module Location
+    # Built once and frozen: callers read these rows on every request. Dup a
+    # row before changing it.
     def self.all
-      data.map { |l| l.transform_keys(&:to_s) }
+      ALL
     end
 
     # One merged row per zone code: `location` becomes the comma-joined list
@@ -336,6 +338,8 @@ module Jakim
     { state: "Kuala Lumpur", code: "WLY01", location: "Kuala Lumpur", latitude: "3.139003", longitude: "101.686855" }.freeze,
     { state: "Labuan", code: "WLY02", location: "Labuan", latitude: "5.275346", longitude: "115.247346" }.freeze,
     ].freeze
+
+    ALL = DATA.map { |l| l.transform_keys(&:to_s).freeze }.freeze
 
     def self.data
       DATA

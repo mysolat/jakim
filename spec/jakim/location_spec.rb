@@ -13,10 +13,11 @@ RSpec.describe Jakim::Location do
   end
 
   describe ".all" do
-    it "returns string-keyed copies" do
+    it "returns string-keyed rows, built once and frozen" do
       row = described_class.all.first
       expect(row["code"]).to eq("JHR01")
-      expect(row).not_to be_frozen
+      expect(described_class.all).to be_frozen.and all(be_frozen)
+      expect(described_class.all).to equal(described_class.all)
     end
   end
 
