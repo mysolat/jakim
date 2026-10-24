@@ -97,12 +97,34 @@ module Jakim
     # The row for an exact zone + location-name pair, so a remembered name can
     # be turned back into the coordinates it was chosen for. Case- and
     # surrounding-space-insensitive; nil when the name belongs to another zone
-    # or names no sub-location at all (a state label, say).
+    # or names no sub-location at all (a state label, say). A former spelling
+    # (FORMER_NAMES) finds the row under its current name.
     def self.find_in_zone(code, name)
-      name = name.to_s.strip
+      name = current_name(code, name)
       return nil if name.empty?
 
       all.find { |l| l["code"] == code && l["location"].casecmp?(name) }
+    end
+
+    # Spellings this dataset used before, per zone, mapped to the current name.
+    # Names were remembered under them (cookies, saved settings, push
+    # subscriptions, links), so they keep resolving. Keyed by zone because
+    # SBH02 still has a Terusan of its own.
+    FORMER_NAMES = {
+      "KDH05" => { "Bandar Bahru" => "Bandar Baharu" },
+      "KTN01" => { "Kota Bahru" => "Kota Bharu" },
+      "SBH09" => { "Long Pa Sia" => "Long Pasia" },
+      "SWK01" => { "Terusan" => "Trusan" },
+      "SWK05" => { "Bitangor" => "Bintangor" }
+    }.freeze
+
+    # The current spelling of `name` in zone `code`: the name itself, stripped,
+    # unless FORMER_NAMES lists it.
+    #
+    #   Jakim::Location.current_name("KTN01", "kota bahru") # => "Kota Bharu"
+    def self.current_name(code, name)
+      name = name.to_s.strip
+      FORMER_NAMES.fetch(code, {}).find { |old, _| old.casecmp?(name) }&.last || name
     end
 
     # Haversine great-circle distance in kilometres between two GPS points.
@@ -139,10 +161,10 @@ module Jakim
     { state: "Kedah", code: "KDH03", location: "Sik", latitude: "5.818345", longitude: "100.743021" }.freeze,
     { state: "Kedah", code: "KDH04", location: "Baling", latitude: "5.675547", longitude: "100.916814" }.freeze,
     { state: "Kedah", code: "KDH05", location: "Kulim", latitude: "5.371742", longitude: "100.555337" }.freeze,
-    { state: "Kedah", code: "KDH05", location: "Bandar Bahru", latitude: "5.131163", longitude: "100.495534" }.freeze,
+    { state: "Kedah", code: "KDH05", location: "Bandar Baharu", latitude: "5.131163", longitude: "100.495534" }.freeze,
     { state: "Kedah", code: "KDH06", location: "Langkawi", latitude: "6.350000", longitude: "99.800000" }.freeze,
     { state: "Kedah", code: "KDH07", location: "Gunung Jerai", latitude: "5.783333", longitude: "100.433333" }.freeze,
-    { state: "Kelantan", code: "KTN01", location: "Kota Bahru", latitude: "6.116786", longitude: "102.277684" }.freeze,
+    { state: "Kelantan", code: "KTN01", location: "Kota Bharu", latitude: "6.116786", longitude: "102.277684" }.freeze,
     { state: "Kelantan", code: "KTN01", location: "Bachok", latitude: "6.069586", longitude: "102.397185" }.freeze,
     { state: "Kelantan", code: "KTN01", location: "Pasir Puteh", latitude: "5.836163", longitude: "102.407741" }.freeze,
     { state: "Kelantan", code: "KTN01", location: "Tumpat", latitude: "6.199069", longitude: "102.169372" }.freeze,
@@ -260,7 +282,7 @@ module Jakim
     { state: "Sabah", code: "SBH09", location: "Kuala Penyu", latitude: "5.571717", longitude: "115.597146" }.freeze,
     { state: "Sabah", code: "SBH09", location: "Weston", latitude: "5.216881", longitude: "115.598801" }.freeze,
     { state: "Sabah", code: "SBH09", location: "Tenom", latitude: "5.130495", longitude: "115.945455" }.freeze,
-    { state: "Sabah", code: "SBH09", location: "Long Pa Sia", latitude: "5.978840", longitude: "116.075320" }.freeze,
+    { state: "Sabah", code: "SBH09", location: "Long Pasia", latitude: "5.978840", longitude: "116.075320" }.freeze,
     { state: "Sabah", code: "SBH01", location: "Sukau", latitude: "5.551318", longitude: "118.302786" }.freeze,
     { state: "Sabah", code: "SBH02", location: "Sandakan Barat", latitude: "5.814070", longitude: "117.732406" }.freeze,
     { state: "Sabah", code: "SBH03", location: "Tawau Timur", latitude: "4.451914", longitude: "118.169232" }.freeze,
@@ -269,7 +291,7 @@ module Jakim
     { state: "Sabah", code: "SBH07", location: "Pantai Barat", latitude: "6.083333", longitude: "116.500000" }.freeze,
     { state: "Sarawak", code: "SWK01", location: "Limbang", latitude: "4.755032", longitude: "115.008146" }.freeze,
     { state: "Sarawak", code: "SWK01", location: "Sundar", latitude: "4.887442", longitude: "115.226701" }.freeze,
-    { state: "Sarawak", code: "SWK01", location: "Terusan", latitude: "4.283333", longitude: "115.616666" }.freeze,
+    { state: "Sarawak", code: "SWK01", location: "Trusan", latitude: "4.283333", longitude: "115.616666" }.freeze,
     { state: "Sarawak", code: "SWK01", location: "Lawas", latitude: "4.834950", longitude: "115.393738" }.freeze,
     { state: "Sarawak", code: "SWK02", location: "Niah", latitude: "3.866516", longitude: "113.730859" }.freeze,
     { state: "Sarawak", code: "SWK03", location: "Belaga", latitude: "3.200278", longitude: "113.934714" }.freeze,
@@ -293,7 +315,7 @@ module Jakim
     { state: "Sarawak", code: "SWK05", location: "Daro", latitude: "2.527996", longitude: "111.417057" }.freeze,
     { state: "Sarawak", code: "SWK05", location: "Sarikei", latitude: "2.131703", longitude: "111.523728" }.freeze,
     { state: "Sarawak", code: "SWK05", location: "Julau", latitude: "2.024275", longitude: "111.916609" }.freeze,
-    { state: "Sarawak", code: "SWK05", location: "Bitangor", latitude: "2.169966", longitude: "111.636641" }.freeze,
+    { state: "Sarawak", code: "SWK05", location: "Bintangor", latitude: "2.169966", longitude: "111.636641" }.freeze,
     { state: "Sarawak", code: "SWK05", location: "Rajang", latitude: "2.137227", longitude: "111.224885" }.freeze,
     { state: "Sarawak", code: "SWK06", location: "Kabong", latitude: "1.803557", longitude: "111.130108" }.freeze,
     { state: "Sarawak", code: "SWK06", location: "Lingga", latitude: "1.250000", longitude: "111.166666" }.freeze,
