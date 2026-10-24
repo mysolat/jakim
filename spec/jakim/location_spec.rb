@@ -129,5 +129,36 @@ RSpec.describe Jakim::Location do
       expect(described_class.find_in_zone("SGR01", nil)).to be_nil
       expect(described_class.find_in_zone("SGR01", "  ")).to be_nil
     end
+
+    it "finds a row by a former spelling, under its current name" do
+      expect(described_class.find_in_zone("KTN01", "kota bahru")["location"]).to eq("Kota Bharu")
+    end
+
+    it "applies a former spelling only in its own zone" do
+      expect(described_class.find_in_zone("SWK01", "Terusan")["location"]).to eq("Trusan")
+      expect(described_class.find_in_zone("SBH02", "Terusan")["location"]).to eq("Terusan")
+    end
+  end
+
+  describe "FORMER_NAMES" do
+    it "maps each former spelling to a current name in the same zone" do
+      described_class::FORMER_NAMES.each do |code, names|
+        names.each do |old, current|
+          expect(described_class.all.any? { |l| l["code"] == code && l["location"] == current }).to be(true), "#{code}: #{current}"
+          expect(described_class.all.any? { |l| l["code"] == code && l["location"] == old }).to be(false), "#{code}: #{old}"
+        end
+      end
+    end
+  end
+
+  describe ".current_name" do
+    it "returns the current spelling of a former name" do
+      expect(described_class.current_name("KDH05", " Bandar Bahru ")).to eq("Bandar Baharu")
+    end
+
+    it "returns any other name stripped and unchanged" do
+      expect(described_class.current_name("SGR01", " Shah Alam ")).to eq("Shah Alam")
+      expect(described_class.current_name("SGR01", nil)).to eq("")
+    end
   end
 end
