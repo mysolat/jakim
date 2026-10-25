@@ -127,6 +127,22 @@ module Jakim
       FORMER_NAMES.fetch(code, {}).find { |old, _| old.casecmp?(name) }&.last || name
     end
 
+    # Towns JAKIM moved to another zone, per former zone, mapped to the zone
+    # they are in now. A zone and town remembered before the move would
+    # otherwise keep the old zone's times.
+    FORMER_ZONES = {
+      "PHG02" => { "Rompin" => "PHG07" }
+    }.freeze
+
+    # The zone town `name` is in now, if JAKIM moved it out of `code`, else
+    # `code`.
+    #
+    #   Jakim::Location.current_zone("PHG02", "Rompin") # => "PHG07"
+    def self.current_zone(code, name)
+      name = current_name(code, name)
+      FORMER_ZONES.fetch(code, {}).find { |old, _| old.casecmp?(name) }&.last || code
+    end
+
     # Haversine great-circle distance in kilometres between two GPS points.
     def self.haversine(lat1, lon1, lat2, lon2)
       r = 6371.0
@@ -193,7 +209,7 @@ module Jakim
     { state: "Pahang", code: "PHG01", location: "Pulau Tioman", latitude: "2.790249", longitude: "104.169846" }.freeze,
     { state: "Pahang", code: "PHG02", location: "Kuantan", latitude: "3.816667", longitude: "103.333333" }.freeze,
     { state: "Pahang", code: "PHG02", location: "Pekan", latitude: "3.492095", longitude: "103.389545" }.freeze,
-    { state: "Pahang", code: "PHG02", location: "Rompin", latitude: "2.688626", longitude: "102.522802" }.freeze,
+    { state: "Pahang", code: "PHG07", location: "Rompin", latitude: "2.805810", longitude: "103.488504" }.freeze,
     { state: "Pahang", code: "PHG02", location: "Muadzam Shah", latitude: "3.056192", longitude: "103.085225" }.freeze,
     { state: "Pahang", code: "PHG03", location: "Maran", latitude: "3.583380", longitude: "102.779065" }.freeze,
     { state: "Pahang", code: "PHG03", location: "Chenor", latitude: "3.493743", longitude: "102.581850" }.freeze,

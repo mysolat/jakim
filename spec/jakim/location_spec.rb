@@ -57,7 +57,7 @@ RSpec.describe Jakim::Location do
   describe ".codes" do
     it "returns unique zone codes" do
       codes = described_class.codes
-      expect(codes).to include("JHR01", "WLY01", "WLY02")
+      expect(codes).to include("JHR01", "PHG07", "WLY01", "WLY02")
       expect(codes.uniq).to eq(codes)
     end
   end
@@ -159,6 +159,29 @@ RSpec.describe Jakim::Location do
     it "returns any other name stripped and unchanged" do
       expect(described_class.current_name("SGR01", " Shah Alam ")).to eq("Shah Alam")
       expect(described_class.current_name("SGR01", nil)).to eq("")
+    end
+  end
+
+  describe ".current_zone" do
+    it "moves a town JAKIM moved to another zone" do
+      expect(described_class.current_zone("PHG02", " rompin ")).to eq("PHG07")
+    end
+
+    it "keeps the zone of any other town" do
+      expect(described_class.current_zone("PHG02", "Kuantan")).to eq("PHG02")
+      expect(described_class.current_zone("PHG07", "Rompin")).to eq("PHG07")
+      expect(described_class.current_zone("SGR01", nil)).to eq("SGR01")
+    end
+  end
+
+  describe "FORMER_ZONES" do
+    it "maps each moved town to a zone that now holds it, and out of its old one" do
+      described_class::FORMER_ZONES.each do |code, towns|
+        towns.each do |town, current|
+          expect(described_class.find_in_zone(current, town)).not_to be_nil, "#{current}: #{town}"
+          expect(described_class.find_in_zone(code, town)).to be_nil, "#{code}: #{town}"
+        end
+      end
     end
   end
 end
