@@ -22,6 +22,19 @@ RSpec.describe Jakim::Zone do
       expect(result["code"]).to start_with("JHR")
     end
 
+    # JAKIM's PHG07 is Mukim Rompin, Endau and Pontian. The polygons are by
+    # district, so the whole of Rompin district, Muadzam Shah included, is
+    # PHG07 until mukim outlines replace it.
+    it "resolves Rompin district to PHG07" do
+      expect(described_class.detect(2.805810, 103.488504)).to include("code" => "PHG07", "name" => "Rompin")
+    end
+
+    it "resolves Bukit Mabong, split out of Kapit district, to SWK04 like Kapit" do
+      feature = JSON.parse(File.read(File.expand_path("../../data/jakim.geojson", __dir__)))["features"]
+        .find { |f| f["properties"]["name"] == "Bukit Mabong" }
+      expect(feature["properties"]["jakim_code"]).to eq("SWK04")
+    end
+
     it "returns nil for open ocean far from Malaysia" do
       expect(described_class.detect(0.0, 90.0)).to be_nil
     end
