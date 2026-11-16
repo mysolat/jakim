@@ -74,9 +74,9 @@ RSpec.describe Jakim::PrayerTime do
   describe "#set_cache_header" do
     subject(:resource) { described_class.new }
 
-    def fake_response(query)
+    def fake_response(query, rows: [ { "date" => "01-Feb-2025" } ])
       url = URI.parse("https://www.e-solat.gov.my/index.php?#{query}")
-      instance_double(Faraday::Env, url: url, response_headers: {})
+      instance_double(Faraday::Env, url: url, response_headers: {}, body: { "prayerTime" => rows }.to_json)
     end
 
     it "computes the monthly expiry from the request's own year param, not the current year" do
@@ -88,7 +88,8 @@ RSpec.describe Jakim::PrayerTime do
     end
 
     it "falls back to the current year for monthly when no year param is present" do
-      response = fake_response("period=month&zone=SGR01&month=2")
+      response = fake_response("period=month&zone=SGR01&month=2",
+                               rows: [ { "date" => "01-Feb-#{Date.current.year}" } ])
 
       resource.send(:set_cache_header, :monthly, response)
 
@@ -105,11 +106,44 @@ RSpec.describe Jakim::PrayerTime do
     end
 
     it "sets the yearly expiry to the end of the requested year" do
-      response = fake_response("period=year&zone=SGR01&year=2027")
+      response = fake_response("period=year&zone=SGR01&year=2027", rows: [ { "date" => "01-Jan-2027" } ])
 
       resource.send(:set_cache_header, :yearly, response)
 
       expect(response.response_headers["Expires"]).to eq(Date.new(2027, 12, 31).to_time.end_of_year.iso8601)
+    end
+
+    it "sets no monthly expiry when e-Solat answers with another year" do
+      response = fake_response("period=month&zone=SGR01&month=1&year=2027", rows: [ { "date" => "01-Jan-2026" } ])
+
+      resource.send(:set_cache_header, :monthly, response)
+
+      expect(response.response_headers).not_to have_key("Expires")
+    end
+
+    it "sets no yearly expiry when e-Solat answers with another year" do
+      response = fake_response("period=year&zone=SGR01&year=2027", rows: [ { "date" => "01-Jan-2026" } ])
+
+      resource.send(:set_cache_header, :yearly, response)
+
+      expect(response.response_headers).not_to have_key("Expires")
+    end
+
+    it "sets no monthly expiry for an empty answer" do
+      response = fake_response("period=month&zone=SGR01&month=2&year=2025", rows: [])
+
+      resource.send(:set_cache_header, :monthly, response)
+
+      expect(response.response_headers).not_to have_key("Expires")
+    end
+
+    it "sets no monthly expiry when the body is not JSON" do
+      url = URI.parse("https://www.e-solat.gov.my/index.php?period=month&zone=SGR01&month=2&year=2025")
+      response = instance_double(Faraday::Env, url: url, response_headers: {}, body: "not json")
+
+      resource.send(:set_cache_header, :monthly, response)
+
+      expect(response.response_headers).not_to have_key("Expires")
     end
 
     it "sets the islamic events expiry to the end of the current year" do
@@ -123,9 +157,44 @@ RSpec.describe Jakim::PrayerTime do
 
   it "exposes the Expires header on a live (stubbed) request" do
     stub_request(:get, %r{\Ahttps://www\.e-solat\.gov\.my/index\.php})
-      .to_return(status: 200, body: body, headers: headers)
+      .to_return(status: 200, headers: headers,
+                 body: { "status" => "OK!", "prayerTime" => [ { "date" => "01-Feb-2025" } ] }.to_json)
     result = described_class.monthly(zone: "SGR01", month: 2, year: 2025)
 
     expect(result._headers["Expires"]).to eq(Date.new(2025, 2, 1).to_time.end_of_month.iso8601)
+  end
+
+  describe "Flexirest caching" do
+    # Flexirest 1.13.2 ignores `cache_store = nil` (its `and return` fires
+    # before the assignment), so the store is cleared with _reset_caching!.
+    around do |ex|
+      Flexirest::Base.cache_store = ActiveSupport::Cache::MemoryStore.new
+      Flexirest::Base.perform_caching = true
+      ex.run
+    ensure
+      Flexirest::Base._reset_caching!
+    end
+
+    def stub_rows(date)
+      stub_request(:get, %r{\Ahttps://www\.e-solat\.gov\.my/index\.php})
+        .to_return(status: 200, headers: { "Content-Type" => "application/json" },
+                   body: { "status" => "OK!", "prayerTime" => [ { "date" => date } ] }.to_json)
+    end
+
+    # The month asked for is the current one: a past month's Expires date is
+    # already gone, and Flexirest rightly does not store such an answer.
+    it "serves a right-year answer from the cache" do
+      stub = stub_rows(Date.current.strftime("%d-%b-%Y"))
+      2.times { described_class.monthly(zone: "SGR01", month: Date.current.month, year: Date.current.year) }
+
+      expect(stub).to have_been_requested.once
+    end
+
+    it "asks again after a wrong-year answer" do
+      stub = stub_rows("01-Jan-#{Date.current.year}")
+      2.times { described_class.monthly(zone: "SGR01", month: 1, year: Date.current.year + 1) }
+
+      expect(stub).to have_been_requested.twice
+    end
   end
 end

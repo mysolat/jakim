@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "json"
+
 module Jakim
   class PrayerTime < Flexirest::Base
     base_url "https://www.e-solat.gov.my/index.php"
@@ -38,14 +40,32 @@ module Jakim
       when :daily
         Time.current.end_of_day
       when :monthly
-        Date.new((params["year"].presence || Date.current.year).to_i, params["month"].to_i, 1).to_time.end_of_month
+        year = (params["year"].presence || Date.current.year).to_i
+        Date.new(year, params["month"].to_i, 1).to_time.end_of_month if rows_in_year?(response, year)
       when :yearly
-        Date.new(params["year"].to_i, 12, 31).to_time.end_of_year
+        year = params["year"].to_i
+        Date.new(year, 12, 31).to_time.end_of_year if rows_in_year?(response, year)
       when :islamic_events
         Time.current.end_of_year
       end
 
-      response.response_headers["Expires"] = expiry.iso8601
+      # No Expires of ours leaves e-Solat's own, which is in the past, so
+      # Flexirest does not store the answer.
+      response.response_headers["Expires"] = expiry.iso8601 if expiry
+    end
+
+    # e-Solat ignores the year it is asked for and answers with the current
+    # one: January 2027 asked for in 2026 comes back as January 2026. Kept
+    # until the end of the period asked for, that answer would be served all
+    # through it. So only an answer whose every row is in the requested year
+    # is cached. An empty answer is not cached either: it is what an
+    # unpublished period looks like, and caching it would hide the publish.
+    def rows_in_year?(response, year)
+      rows = JSON.parse(response.body.to_s)["prayerTime"]
+      rows.is_a?(Array) && rows.any? &&
+        rows.all? { |row| row.is_a?(Hash) && row["date"].to_s.end_with?("-#{year}") }
+    rescue JSON::ParserError
+      false
     end
   end
 end
